@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qec"
+version = "0.1.0"
+description = "ML-assisted quantum error correction: streaming GNN pre-decoder for the rotated surface code"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pyyaml",
+    "stim",
+    "pymatching",
+    "sinter",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
