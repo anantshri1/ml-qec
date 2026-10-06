@@ -1,7 +1,7 @@
 """Single source of truth for every path in the project.
 
 Nothing else in the repo builds a path by hand. A new artifact path is
-added here first, then recorded in the roadmap doc and in project memory.
+added here first.
 """
 import os
 from pathlib import Path
@@ -44,3 +44,37 @@ def ensure_dirs() -> None:
     for d in (DATA_DIR, DEMS_DIR, BASELINES_DIR,
               CHECKPOINTS_DIR, RUNS_DIR, BENCHMARKS_DIR):
         d.mkdir(parents=True, exist_ok=True)
+
+# --- Naming helpers: the ONLY place these patterns are written ---
+NOISES = ("si1000", "corr")
+
+
+def _check_noise(noise: str) -> None:
+    if noise not in NOISES:
+        raise ValueError(f"noise must be one of {NOISES}, got {noise!r}")
+
+
+def p_tag(p: float) -> str:
+    """0.001 -> 'p0.001'. One formatter, so data and DEM paths never diverge."""
+    return f"p{p:g}"
+
+
+def point_tag(d: int, rounds: int, p: float) -> str:
+    """The 'd5_r10_p0.001' fragment shared by data and DEM paths."""
+    return f"d{d}_r{rounds}_{p_tag(p)}"
+
+
+# --- Data-side paths (pure: return a Path, never touch the disk) ---
+def shard_path(noise: str, d: int, rounds: int, p: float, k: int) -> Path:
+    _check_noise(noise)
+    return DATA_DIR / noise / point_tag(d, rounds, p) / f"shard_{k:04d}.npz"
+
+
+def dem_path(noise: str, d: int, rounds: int, p: float) -> Path:
+    _check_noise(noise)
+    return DEMS_DIR / noise / f"{point_tag(d, rounds, p)}.dem"
+
+
+def baseline_csv(decoder: str, noise: str) -> Path:
+    _check_noise(noise)
+    return BASELINES_DIR / decoder / f"{noise}.csv"
