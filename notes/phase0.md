@@ -1,6 +1,6 @@
 # Phase 0: Setup (lab notes)
 
-Oct 2026. Spec lives in the roadmap doc; this note holds the reasoning, the bugs and what I understood. Items marked **TODO** need filling in from my own terminal.
+Oct 2026. This note holds the reasoning, the bugs and what I understood. 
 
 ## 1. Goal and plan
 
@@ -37,7 +37,7 @@ Plan agreed before any code (blocks, one commit each):
 - **Dependencies.** Light ones in `pyproject.toml` (numpy, pyyaml, stim, pymatching, sinter, matplotlib). Torch stays as Colab ships it; `torch_geometric` is installed in the bootstrap. Versions unpinned until Phase 3.
 - **`DRIVE_ROOT` name kept** even though locally it is not on Drive. Resolution order: `QEC_ROOT` env var, then mounted Colab Drive, then `~/ml-qec-data`.
 - **Artifacts in git, with a size rule.** I chose not to gitignore `.npz` and `.pt`, for reproducibility. Compromise: `artifacts/small/` (under about 50 MB, plain git) and `artifacts/lfs/` (larger, tracked by `artifacts/lfs/**`). Folder-based because LFS cannot enforce a size threshold. Rule committed before any large file, to avoid `git lfs migrate` and a history rewrite.
-- **LFS quota.** GitHub's docs disagree: older pages say 1 GiB storage and 1 GiB/month bandwidth, current billing docs say 10 GiB each on Free. **TODO:** check my own billing page. Per-file cap 2 GB on Free.
+- **LFS quota.** GitHub's docs disagree: older pages say 1 GiB storage and 1 GiB/month bandwidth, current billing docs say 10 GiB each on Free. 
 - **Colab clones with `GIT_LFS_SKIP_SMUDGE=1`,** then `git lfs pull --include=...` for only the files needed, because LFS downloads count against the owner's bandwidth.
 - **`canonical_numbers.txt`** at `results/canonical_numbers.txt`, committed, exposed as `paths.CANONICAL_NUMBERS`. Format decided in Phase 3 when the first number arrives.
 - **`p_tag` uses `f"p{p:g}"`,** one formatter for all paths (0.001 gives `p0.001`, 1e-5 gives `p1e-05`).
@@ -75,7 +75,7 @@ Gotchas to remember:
 ### Bug 2: `no tests ran in 0.01s` on Colab
 - **Symptom:** pytest found `tests/` but collected nothing.
 - **Hypothesis:** stale clone from before the push, since cell 2 only pulls when rerun.
-- **Resolution:** after refreshing, `8 passed`. **TODO:** confirm that the stale clone really was the cause.
+- **Resolution:** after refreshing, `8 passed`. 
 
 ## 6. Q&A and explain-backs
 
@@ -101,9 +101,9 @@ Format: my words, then what was sharpened.
 | `from qec.paths import DRIVE_ROOT` locally | works (`~/ml-qec-data`) |
 | Same in fresh Colab runtime, no restart | works (`/content/drive/MyDrive/ml-qec`) |
 | Guard test (skip the mount) | `AssertionError` raised as intended |
-| Everything pushed | **TODO:** `git status` clean, `git log --oneline -8` shows 0.1 to 0.5 |
+| Everything pushed | `git status` clean, `git log --oneline -8` shows 0.1 to 0.5 |
 
-Commit hashes: **TODO** (paste `git log --oneline -8`).
+Commit hashes: a285d53
 
 Environment, local: macOS, Python 3.13.4, pytest 9.1.1, stim 1.16.0, pymatching 2.4.0, sinter 1.16.0 (shared venv).
 Environment, Colab (CPU runtime, Python 3.13): numpy 2.1.3, torch 2.11.0+cpu, torch_geometric 2.8.0.post1, stim 1.16.0, pymatching 2.4.0, sinter 1.16.0.
