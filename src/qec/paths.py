@@ -78,3 +78,52 @@ def dem_path(noise: str, d: int, rounds: int, p: float) -> Path:
 def baseline_csv(decoder: str, noise: str) -> Path:
     _check_noise(noise)
     return BASELINES_DIR / decoder / f"{noise}.csv"
+
+from datetime import date
+
+
+def make_run_name(model: str, noise: str, d: int, when: date | None = None) -> str:
+    """'{model}_{noise}_d{d}_{yyyymmdd}'. Generate ONCE at launch and store
+    it in the run's config; a resumed run must reuse the stored name."""
+    _check_noise(noise)
+    when = when or date.today()
+    return f"{model}_{noise}_d{d}_{when:%Y%m%d}"
+
+
+# --- Run-side paths (pure) ---
+def config_path(name: str) -> Path:
+    """The experiment YAML in the repo: configs/<name>.yaml."""
+    return CONFIGS_DIR / f"{name}.yaml"
+
+
+def run_dir(run_name: str) -> Path:
+    return RUNS_DIR / run_name
+
+
+def run_config_copy(run_name: str) -> Path:
+    """Config saved next to the outputs, so a run is self-describing."""
+    return run_dir(run_name) / "config.yaml"
+
+
+def metrics_csv(run_name: str) -> Path:
+    return run_dir(run_name) / "metrics.csv"
+
+
+def checkpoint_path(run_name: str, epoch: int) -> Path:
+    return CHECKPOINTS_DIR / run_name / f"epoch_{epoch:03d}.pt"
+
+
+def last_checkpoint(run_name: str) -> Path:
+    return CHECKPOINTS_DIR / run_name / "last.pt"
+
+
+def benchmark_dir(run_name: str) -> Path:
+    return BENCHMARKS_DIR / run_name
+
+
+def ler_csv(run_name: str) -> Path:
+    return benchmark_dir(run_name) / "ler.csv"
+
+
+def latency_csv(run_name: str) -> Path:
+    return benchmark_dir(run_name) / "latency.csv"
