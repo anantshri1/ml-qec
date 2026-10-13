@@ -61,3 +61,33 @@ def gf2_rank(M) -> int:
         A[others] ^= A[rank]
         rank += 1
     return rank
+
+def stabiliser_matrix(paulis) -> np.ndarray:
+    """Stack Pauli strings into a check matrix, one row per generator."""
+    vecs = [pauli_to_vec(p) for p in paulis]
+    if len({v.size for v in vecs}) != 1:
+        raise ValueError("all Paulis must act on the same number of qubits")
+    return np.stack(vecs)
+
+
+def symplectic_gram(A, B) -> np.ndarray:
+    """G[i, j] = symplectic product of row i of A with row j of B."""
+    A = np.atleast_2d(np.asarray(A, dtype=np.int64))
+    B = np.atleast_2d(np.asarray(B, dtype=np.int64))
+    if A.shape[1] != B.shape[1] or A.shape[1] % 2:
+        raise ValueError(f"incompatible shapes {A.shape}, {B.shape}")
+    n = A.shape[1] // 2
+    G = A[:, :n] @ B[:, n:].T + A[:, n:] @ B[:, :n].T
+    return (G % 2).astype(np.uint8)
+
+
+def syndrome(H, error) -> np.ndarray:
+    """Syndrome bits of an error (Pauli string or vector) against check matrix H."""
+    e = pauli_to_vec(error) if isinstance(error, str) else np.asarray(error)
+    return symplectic_gram(H, e)[:, 0]
+
+
+def n_logical(H) -> int:
+    """k = n - rank over GF(2)."""
+    H = np.asarray(H)
+    return H.shape[1] // 2 - gf2_rank(H)

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qec.stabilisers import pauli_to_vec, vec_to_pauli, symplectic_product, gf2_rank
+from qec.stabilisers import pauli_to_vec, vec_to_pauli, symplectic_product, gf2_rank, stabiliser_matrix, symplectic_gram, syndrome, n_logical
 
 def test_xzi_vector():
     assert pauli_to_vec("XZI").tolist() == [1, 0, 0, 0, 1, 0]
@@ -60,3 +60,35 @@ def test_gf2_rank_does_not_mutate_input():
     before = M.copy()
     gf2_rank(M)
     assert np.array_equal(M, before)
+
+REP3 = ["ZZI", "IZZ"]
+
+
+def test_gram_matches_pairwise_product():
+    paulis = ["XZI", "YYX", "ZIZ", "IXY"]
+    G = symplectic_gram(stabiliser_matrix(paulis), stabiliser_matrix(paulis))
+    for i, a in enumerate(paulis):
+        for j, b in enumerate(paulis):
+            assert G[i, j] == sp(a, b)
+
+
+def test_rep3_is_valid_and_encodes_one_qubit():
+    H = stabiliser_matrix(REP3)
+    assert not symplectic_gram(H, H).any()       # all generators commute
+    assert gf2_rank(H) == 2
+    assert n_logical(H) == 1
+
+
+@pytest.mark.parametrize("err, expected", [
+    ("XII", [1, 0]),
+    ("IXI", [1, 1]),
+    ("IIX", [0, 1]),
+    ("III", [0, 0]),
+])
+def test_rep3_single_bit_flip_syndromes(err, expected):
+    assert syndrome(stabiliser_matrix(REP3), err).tolist() == expected
+
+
+@pytest.mark.parametrize("err", ["ZII", "IZI", "IIZ"])
+def test_rep3_phase_flips_are_invisible(err):
+    assert syndrome(stabiliser_matrix(REP3), err).tolist() == [0, 0]
