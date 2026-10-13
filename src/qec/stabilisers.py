@@ -38,3 +38,26 @@ def symplectic_product(u, v) -> int:
         raise ValueError(f"shape mismatch or odd length: {u.shape}, {v.shape}")
     n = u.size // 2
     return int((u[:n] @ v[n:] + u[n:] @ v[:n]) % 2)
+
+def gf2_rank(M) -> int:
+    """Rank of a binary matrix over GF(2) (all arithmetic mod 2)."""
+    A = np.array(M, dtype=np.uint8) % 2      # a copy: never mutate the caller's matrix
+    if A.ndim != 2:
+        raise ValueError(f"expected a 2-D matrix, got shape {A.shape}")
+    n_rows, n_cols = A.shape
+    rank = 0
+    for col in range(n_cols):
+        if rank == n_rows:
+            break
+        # pivot: first row at or below `rank` with a 1 in this column
+        candidates = np.nonzero(A[rank:, col])[0]
+        if candidates.size == 0:
+            continue
+        p = rank + candidates[0]
+        A[[rank, p]] = A[[p, rank]]          # swap the pivot row into place
+        # clear this column in every other row: XOR is addition mod 2
+        others = np.nonzero(A[:, col])[0]
+        others = others[others != rank]
+        A[others] ^= A[rank]
+        rank += 1
+    return rank
