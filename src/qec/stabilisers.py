@@ -91,3 +91,27 @@ def n_logical(H) -> int:
     """k = n - rank over GF(2)."""
     H = np.asarray(H)
     return H.shape[1] // 2 - gf2_rank(H)
+
+def pauli_from_support(n: int, support, letter: str) -> str:
+    """e.g. pauli_from_support(4, (0, 2), 'Z') -> 'ZIZI'."""
+    if letter not in "XYZ":
+        raise ValueError(f"letter must be X, Y or Z, got {letter!r}")
+    s = ["I"] * n
+    for q in support:
+        s[q] = letter
+    return "".join(s)
+
+
+# d=3 rotated surface code. Data qubits row-major on a 3x3 grid:
+#   0 1 2
+#   3 4 5
+#   6 7 8
+D3_X_SUPPORTS = [(0, 1, 3, 4), (4, 5, 7, 8), (1, 2), (6, 7)]
+D3_Z_SUPPORTS = [(1, 2, 4, 5), (3, 4, 6, 7), (0, 3), (5, 8)]
+
+
+def rotated_d3_checks():
+    """Return (x_checks, z_checks) as lists of Pauli strings on 9 qubits."""
+    xs = [pauli_from_support(9, s, "X") for s in D3_X_SUPPORTS]
+    zs = [pauli_from_support(9, s, "Z") for s in D3_Z_SUPPORTS]
+    return xs, zs

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qec.stabilisers import pauli_to_vec, vec_to_pauli, symplectic_product, gf2_rank, stabiliser_matrix, symplectic_gram, syndrome, n_logical
+from qec.stabilisers import pauli_to_vec, vec_to_pauli, symplectic_product, gf2_rank, stabiliser_matrix, symplectic_gram, syndrome, n_logical, pauli_from_support, rotated_d3_checks, D3_X_SUPPORTS, D3_Z_SUPPORTS
 
 def test_xzi_vector():
     assert pauli_to_vec("XZI").tolist() == [1, 0, 0, 0, 1, 0]
@@ -92,3 +92,49 @@ def test_rep3_single_bit_flip_syndromes(err, expected):
 @pytest.mark.parametrize("err", ["ZII", "IZI", "IIZ"])
 def test_rep3_phase_flips_are_invisible(err):
     assert syndrome(stabiliser_matrix(REP3), err).tolist() == [0, 0]
+
+def test_pauli_from_support():
+    assert pauli_from_support(4, (0, 2), "Z") == "ZIZI"
+
+
+def test_d3_check_counts_and_weights():
+    xs, zs = rotated_d3_checks()
+    assert len(xs) == 4 and len(zs) == 4
+    weights = sorted(len(s) for s in D3_X_SUPPORTS + D3_Z_SUPPORTS)
+    assert weights == [2, 2, 2, 2, 4, 4, 4, 4]
+
+
+def test_d3_even_overlap_rule():
+    # X-check and Z-check commute iff they share an even number of qubits
+    for sx in D3_X_SUPPORTS:
+        for sz in D3_Z_SUPPORTS:
+            assert len(set(sx) & set(sz)) % 2 == 0, (sx, sz)
+
+
+def test_d3_all_checks_commute():
+    xs, zs = rotated_d3_checks()
+    H = stabiliser_matrix(xs + zs)
+    assert not symplectic_gram(H, H).any()
+
+
+def test_d3_css_condition():
+    # CSS form: H_X has only x-bits, H_Z only z-bits; commutation is H_X @ H_Z.T = 0 mod 2
+    xs, zs = rotated_d3_checks()
+    HX = stabiliser_matrix(xs)[:, :9].astype(np.int64)
+    HZ = stabiliser_matrix(zs)[:, 9:].astype(np.int64)
+    assert not ((HX @ HZ.T) % 2).any()
+
+
+def test_d3_encodes_one_qubit():
+    xs, zs = rotated_d3_checks()
+    H = stabiliser_matrix(xs + zs)
+    assert gf2_rank(H) == 8
+    assert n_logical(H) == 1
+
+
+@pytest.mark.parametrize("q", range(9))
+def test_d3_every_single_qubit_error_is_detected(q):
+    xs, zs = rotated_d3_checks()
+    H = stabiliser_matrix(xs + zs)
+    for letter in "XYZ":
+        assert syndrome(H, pauli_from_support(9, (q,), letter)).any(), (q, letter)
