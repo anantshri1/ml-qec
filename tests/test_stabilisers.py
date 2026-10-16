@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qec.stabilisers import pauli_to_vec, vec_to_pauli, symplectic_product, gf2_rank, stabiliser_matrix, symplectic_gram, syndrome, n_logical, pauli_from_support, rotated_d3_checks, D3_X_SUPPORTS, D3_Z_SUPPORTS, in_stabiliser_group, classify_error, code_distance
+from qec.stabilisers import pauli_to_vec, vec_to_pauli, symplectic_product, gf2_rank, stabiliser_matrix, symplectic_gram, syndrome, n_logical, pauli_from_support, rotated_d3_checks, D3_X_SUPPORTS, D3_Z_SUPPORTS, in_stabiliser_group, classify_error, code_distance, paulis_of_weight, build_lookup_decoder, decode_succeeds
 
 def test_xzi_vector():
     assert pauli_to_vec("XZI").tolist() == [1, 0, 0, 0, 1, 0]
@@ -177,3 +177,27 @@ def test_d3_degenerate_pair():
 def test_distances():
     assert code_distance(stabiliser_matrix(REP3)) == 1
     assert code_distance(d3_H()) == 3
+
+@pytest.fixture(scope="module")
+def d3_table():
+    return build_lookup_decoder(d3_H(), max_weight=3)
+
+
+def test_lookup_corrects_every_weight1_error(d3_table):
+    H = d3_H()
+    errors = list(paulis_of_weight(9, 1))
+    assert len(errors) == 27
+    for e in errors:
+        assert decode_succeeds(H, d3_table, e), vec_to_pauli(e)
+
+
+def test_lookup_fails_on_x0x3(d3_table):
+    H = d3_H()
+    e = pauli_from_support(9, (0, 3), "X")
+    assert not decode_succeeds(H, d3_table, e)
+
+
+def test_some_weight2_errors_fail(d3_table):
+    H = d3_H()
+    failures = [e for e in paulis_of_weight(9, 2) if not decode_succeeds(H, d3_table, e)]
+    assert len(failures) > 0

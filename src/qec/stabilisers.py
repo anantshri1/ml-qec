@@ -147,3 +147,40 @@ def code_distance(H, max_weight=None) -> int:
                 if classify_error(H, v) == "logical":
                     return w
     raise ValueError(f"no logical operator found up to weight {max_weight}")
+
+def _vec_from_letters(n, support, letters) -> np.ndarray:
+    v = np.zeros(2 * n, dtype=np.uint8)
+    for q, letter in zip(support, letters):
+        v[q] = _X_BIT[letter]
+        v[n + q] = _Z_BIT[letter]
+    return v
+
+
+def paulis_of_weight(n: int, w: int):
+    """Yield every Pauli vector on n qubits with exactly w non-identity factors."""
+    for support in itertools.combinations(range(n), w):
+        for letters in itertools.product("XYZ", repeat=w):
+            yield _vec_from_letters(n, support, letters)
+
+
+def build_lookup_decoder(H, max_weight: int) -> dict:
+    """Map syndrome (tuple of bits) -> lightest error producing it, up to max_weight."""
+    H = np.asarray(H)
+    n = H.shape[1] // 2
+    table = {}
+    for w in range(max_weight + 1):
+        for v in paulis_of_weight(n, w):
+            s = tuple(syndrome(H, v).tolist())
+            if s not in table:              # keep the first, i.e. lightest
+                table[s] = v
+    return table
+
+
+def decode_succeeds(H, table, error) -> bool:
+    """Apply the lookup correction; success iff the residual is a stabiliser."""
+    e = pauli_to_vec(error) if isinstance(error, str) else np.asarray(error, dtype=np.uint8)
+    s = tuple(syndrome(H, e).tolist())
+    if s not in table:
+        return False                        # syndrome never seen: decoder has no answer
+    residual = e ^ table[s]                 # Pauli product = XOR of vectors (phases dropped)
+    return classify_error(H, residual) == "stabiliser"
