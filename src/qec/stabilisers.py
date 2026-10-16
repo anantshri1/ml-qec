@@ -4,6 +4,7 @@ A Pauli on n qubits is a length-2n vector (x_1..x_n | z_1..z_n):
 X-block first, then Z-block (Nielsen & Chuang convention).
 """
 import numpy as np
+import itertools
 
 _X_BIT = {"I": 0, "X": 1, "Y": 1, "Z": 0}
 _Z_BIT = {"I": 0, "X": 0, "Y": 1, "Z": 1}
@@ -115,3 +116,34 @@ def rotated_d3_checks():
     xs = [pauli_from_support(9, s, "X") for s in D3_X_SUPPORTS]
     zs = [pauli_from_support(9, s, "Z") for s in D3_Z_SUPPORTS]
     return xs, zs
+
+def in_stabiliser_group(H, v) -> bool:
+    """True if v is a product of the rows of H (up to phase)."""
+    H = np.atleast_2d(np.asarray(H, dtype=np.uint8))
+    v = np.asarray(v, dtype=np.uint8)
+    return gf2_rank(np.vstack([H, v])) == gf2_rank(H)
+
+
+def classify_error(H, error) -> str:
+    """'detectable', 'stabiliser' or 'logical'."""
+    e = pauli_to_vec(error) if isinstance(error, str) else np.asarray(error, dtype=np.uint8)
+    if syndrome(H, e).any():
+        return "detectable"
+    return "stabiliser" if in_stabiliser_group(H, e) else "logical"
+
+
+def code_distance(H, max_weight=None) -> int:
+    """Minimum weight of a logical operator, by brute force over weight."""
+    H = np.asarray(H)
+    n = H.shape[1] // 2
+    max_weight = n if max_weight is None else max_weight
+    for w in range(1, max_weight + 1):
+        for support in itertools.combinations(range(n), w):
+            for letters in itertools.product("XYZ", repeat=w):
+                v = np.zeros(2 * n, dtype=np.uint8)
+                for q, letter in zip(support, letters):
+                    v[q] = _X_BIT[letter]
+                    v[n + q] = _Z_BIT[letter]
+                if classify_error(H, v) == "logical":
+                    return w
+    raise ValueError(f"no logical operator found up to weight {max_weight}")

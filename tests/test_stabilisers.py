@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qec.stabilisers import pauli_to_vec, vec_to_pauli, symplectic_product, gf2_rank, stabiliser_matrix, symplectic_gram, syndrome, n_logical, pauli_from_support, rotated_d3_checks, D3_X_SUPPORTS, D3_Z_SUPPORTS
+from qec.stabilisers import pauli_to_vec, vec_to_pauli, symplectic_product, gf2_rank, stabiliser_matrix, symplectic_gram, syndrome, n_logical, pauli_from_support, rotated_d3_checks, D3_X_SUPPORTS, D3_Z_SUPPORTS, in_stabiliser_group, classify_error, code_distance
 
 def test_xzi_vector():
     assert pauli_to_vec("XZI").tolist() == [1, 0, 0, 0, 1, 0]
@@ -138,3 +138,42 @@ def test_d3_every_single_qubit_error_is_detected(q):
     H = stabiliser_matrix(xs + zs)
     for letter in "XYZ":
         assert syndrome(H, pauli_from_support(9, (q,), letter)).any(), (q, letter)
+
+@pytest.mark.parametrize("err, expected", [
+    ("ZIZ", "stabiliser"),
+    ("ZII", "logical"),
+    ("ZZZ", "logical"),
+    ("XII", "detectable"),
+    ("XIX", "detectable"),
+    ("XXX", "logical"),
+])
+def test_rep3_classification(err, expected):
+    assert classify_error(stabiliser_matrix(REP3), err) == expected
+
+
+def d3_H():
+    xs, zs = rotated_d3_checks()
+    return stabiliser_matrix(xs + zs)
+
+
+def test_d3_logicals():
+    H = d3_H()
+    ZL = pauli_from_support(9, (0, 1, 2), "Z")    # top row
+    XL = pauli_from_support(9, (0, 3, 6), "X")    # left column
+    assert classify_error(H, ZL) == "logical"
+    assert classify_error(H, XL) == "logical"
+    assert sp(ZL, XL) == 1                        # logical X and Z anticommute
+
+
+def test_d3_equivalent_logical():
+    # Z_L times a Z stabiliser is still Z_L: Z0Z1Z2 * Z1Z2Z4Z5 = Z0Z4Z5
+    assert classify_error(d3_H(), pauli_from_support(9, (0, 4, 5), "Z")) == "logical"
+
+
+def test_d3_degenerate_pair():
+    assert classify_error(d3_H(), pauli_from_support(9, (1, 2), "X")) == "stabiliser"
+
+
+def test_distances():
+    assert code_distance(stabiliser_matrix(REP3)) == 1
+    assert code_distance(d3_H()) == 3
