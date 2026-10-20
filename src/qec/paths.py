@@ -53,27 +53,32 @@ def _check_noise(noise: str) -> None:
     if noise not in NOISES:
         raise ValueError(f"noise must be one of {NOISES}, got {noise!r}")
 
+BASES = ("x", "z")
+
+
+def _check_basis(basis: str) -> None:
+    if basis not in BASES:
+        raise ValueError(f"basis must be one of {BASES}, got {basis!r}")
 
 def p_tag(p: float) -> str:
     """0.001 -> 'p0.001'. One formatter, so data and DEM paths never diverge."""
     return f"p{p:g}"
 
 
-def point_tag(d: int, rounds: int, p: float) -> str:
-    """The 'd5_r10_p0.001' fragment shared by data and DEM paths."""
-    return f"d{d}_r{rounds}_{p_tag(p)}"
-
+def point_tag(basis: str, d: int, rounds: int, p: float) -> str:
+    """The 'z_d5_r10_p0.001' fragment shared by data and DEM paths."""
+    _check_basis(basis)
+    return f"{basis}_d{d}_r{rounds}_{p_tag(p)}"
 
 # --- Data-side paths (pure: return a Path, never touch the disk) ---
-def shard_path(noise: str, d: int, rounds: int, p: float, k: int) -> Path:
+def shard_path(noise: str, basis: str, d: int, rounds: int, p: float, k: int) -> Path:
     _check_noise(noise)
-    return DATA_DIR / noise / point_tag(d, rounds, p) / f"shard_{k:04d}.npz"
+    return DATA_DIR / noise / point_tag(basis, d, rounds, p) / f"shard_{k:04d}.npz"
 
 
-def dem_path(noise: str, d: int, rounds: int, p: float) -> Path:
+def dem_path(noise: str, basis: str, d: int, rounds: int, p: float) -> Path:
     _check_noise(noise)
-    return DEMS_DIR / noise / f"{point_tag(d, rounds, p)}.dem"
-
+    return DEMS_DIR / noise / f"{point_tag(basis, d, rounds, p)}.dem"
 
 def baseline_csv(decoder: str, noise: str) -> Path:
     _check_noise(noise)

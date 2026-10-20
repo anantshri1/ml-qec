@@ -6,7 +6,7 @@ never touches the circuit layout.
 """
 import stim
 
-BASES = ("x", "z")
+from qec.paths import BASES
 
 
 def memory_circuit(d: int, rounds: int, basis: str = "z") -> stim.Circuit:

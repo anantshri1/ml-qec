@@ -27,8 +27,8 @@ def test_p_tag():
 
 
 def test_data_side_patterns():
-    assert rel(P.shard_path("si1000", 5, 10, 0.001, 3)) == "data/si1000/d5_r10_p0.001/shard_0003.npz"
-    assert rel(P.dem_path("corr", 5, 10, 0.001)) == "dems/corr/d5_r10_p0.001.dem"
+    assert rel(P.shard_path("si1000", "z", 5, 10, 0.001, 3)) == "data/si1000/z_d5_r10_p0.001/shard_0003.npz"
+    assert rel(P.dem_path("corr", "x", 5, 10, 0.001)) == "dems/corr/x_d5_r10_p0.001.dem"
     assert rel(P.baseline_csv("pymatching", "si1000")) == "baselines/pymatching/si1000.csv"
 
 
@@ -46,9 +46,9 @@ def test_run_side_patterns():
 
 def test_bad_noise_raises():
     with pytest.raises(ValueError):
-        P.shard_path("si1000x", 5, 10, 0.001, 0)
+        P.shard_path("si1000x", "z", 5, 10, 0.001, 0)
     with pytest.raises(ValueError):
-        P.dem_path("si1000x", 5, 10, 0.001)
+        P.dem_path("si1000x", "z", 5, 10, 0.001)
     with pytest.raises(ValueError):
         P.baseline_csv("pymatching", "si1000x")
     with pytest.raises(ValueError):
@@ -67,7 +67,7 @@ def test_env_override(tmp_path):
 
 def test_path_functions_are_pure(tmp_path):
     code = ("from qec import paths as P; "
-            "P.shard_path('si1000',5,10,0.001,0); P.dem_path('corr',5,10,0.001); "
+            "P.shard_path('si1000','z',5,10,0.001,0); P.dem_path('corr','z',5,10,0.001); "
             "P.baseline_csv('pymatching','si1000'); P.checkpoint_path('r',1); "
             "P.last_checkpoint('r'); P.run_dir('r'); P.ler_csv('r'); P.latency_csv('r')")
     run_py(code, tmp_path)
@@ -78,3 +78,4 @@ def test_ensure_dirs_is_idempotent(tmp_path):
     run_py("from qec import paths as P; P.ensure_dirs(); P.ensure_dirs()", tmp_path)
     names = sorted(p.name for p in tmp_path.iterdir())
     assert names == ["baselines", "benchmarks", "checkpoints", "data", "dems", "runs"]
+
