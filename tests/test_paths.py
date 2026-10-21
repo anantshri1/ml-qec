@@ -79,3 +79,11 @@ def test_ensure_dirs_is_idempotent(tmp_path):
     names = sorted(p.name for p in tmp_path.iterdir())
     assert names == ["baselines", "benchmarks", "checkpoints", "data", "dems", "runs"]
 
+
+def test_bad_basis_raises():
+    with pytest.raises(ValueError):
+        P.point_tag("y", 5, 10, 0.001)
+    with pytest.raises(ValueError):
+        P.shard_path("si1000", "Z", 5, 10, 0.001, 0)   # case matters
+    with pytest.raises(ValueError):
+        P.dem_path("si1000", "y", 5, 10, 0.001)
